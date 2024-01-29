@@ -2,8 +2,12 @@ use aws_sdk_s3::Error;
 use clap::Parser;
 use futures_util::StreamExt;
 use simplelog::*;
-use tokio::io::AsyncWriteExt;
-use tokio::sync::{mpsc, oneshot};
+use std::path::Path;
+use tokio::{
+    fs,
+    io::AsyncWriteExt,
+    sync::{mpsc, oneshot},
+};
 
 #[macro_use]
 extern crate lazy_static;
@@ -123,8 +127,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         let bytes_len = bytes.len();
 
                         // dbg!(&key);
+
+                        // Create any necessary directories
+                        let path = Path::new(&key);
+                        if let Some(dir) = path.parent() {
+                            fs::create_dir_all(dir).await.unwrap();
+                        }
+
                         // Open the file for writing
-                        let mut localfh = tokio::fs::OpenOptions::new()
+                        let mut localfh = fs::OpenOptions::new()
                             .create(true)
                             .write(true)
                             .truncate(true)
