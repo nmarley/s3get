@@ -133,6 +133,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             .unwrap();
                         match localfh.write_all(&bytes).await {
                             Ok(_) => {
+                                if args.verbose {
+                                    info!("wrote {} bytes to file: {}", bytes_len, key);
+                                }
                                 // Send the results to the output channel for appending
                                 // to the outfile
                                 if writer_tx.send((key.to_owned(), bytes_len)).await.is_err() {

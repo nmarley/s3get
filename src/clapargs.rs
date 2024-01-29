@@ -13,4 +13,7 @@ pub struct Args {
     /// The number of threads to use (defaults to NUM_CPUS * 8)
     #[arg(long)]
     pub num_threads: Option<usize>,
+    /// Maximum verbosity
+    #[arg(long)]
+    pub verbose: bool,
 }
