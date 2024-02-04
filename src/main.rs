@@ -2,7 +2,7 @@ use aws_sdk_s3::Error;
 use clap::Parser;
 use futures_util::StreamExt;
 use simplelog::*;
-use std::path::Path;
+use std::path::PathBuf;
 use tokio::{
     fs,
     io::AsyncWriteExt,
@@ -59,6 +59,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Use 8x the number of cores as the default channel buffer size
         None => *NUM_CORES * 8,
     };
+    // Set destination directory as a PathBuf
+    let dest_dir = PathBuf::from(match args.dest_dir {
+        Some(path) => path,
+        None => ".".to_string(),
+    });
+
+    info!("num_workers: {}, dest_dir: {:?}", num_workers, dest_dir);
 
     // Create an mpmc channel for streaming lines from the input file into
     // worker tasks. Bounded in order to handle backpressure
@@ -118,6 +125,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let rx = rx.clone();
         let writer_tx = writer_tx.clone();
         let s3agent = s3agent.clone();
+        let dest_dir = dest_dir.clone();
         let handle = tokio::spawn(async move {
             while let Ok(line) = rx.recv().await {
                 let key = line.trim();
@@ -126,10 +134,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Ok(bytes) => {
                         let bytes_len = bytes.len();
 
-                        // dbg!(&key);
-
+                        // Join the dest_dir and key to create the full path
+                        let path = dest_dir.join(key);
                         // Create any necessary directories
-                        let path = Path::new(&key);
                         if let Some(dir) = path.parent() {
                             fs::create_dir_all(dir).await.unwrap();
                         }
@@ -139,13 +146,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             .create(true)
                             .write(true)
                             .truncate(true)
-                            .open(&key)
+                            .open(&path)
                             .await
                             .unwrap();
                         match localfh.write_all(&bytes).await {
                             Ok(_) => {
                                 if args.verbose {
-                                    info!("wrote {} bytes to file: {}", bytes_len, key);
+                                    info!("wrote {} bytes to file: {}", bytes_len, path.display());
                                 }
                                 // Send the results to the output channel for appending
                                 // to the outfile

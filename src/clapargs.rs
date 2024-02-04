@@ -16,4 +16,7 @@ pub struct Args {
     /// Maximum verbosity
     #[arg(long)]
     pub verbose: bool,
+    /// The destination directory to place files (default = ".")
+    #[arg(long)]
+    pub dest_dir: Option<String>,
 }

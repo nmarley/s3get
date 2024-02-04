@@ -17,7 +17,7 @@ cargo build --release
 ## Usage
 
 ```sh
-s3get --bucket <bucket-name> --keys-file <s3-object-keys.txt> [--num-threads n] [--verbose]
+s3get --bucket <bucket-name> --keys-file <s3-object-keys.txt> [--num-threads n] [--verbose] [--dest-dir dest]
 ```
 
 ## License
